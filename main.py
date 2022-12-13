@@ -1,15 +1,18 @@
 class TuringMachine:
     def __init__(self):
-        self._tape = input('').split(' ')
-        self._head = 0
-        self._state = 'b'
+        self._tape = [''] * 3 + input('').split(' ')
+        self._head = 3
+        self._state = 'cnt'
         self._operand = '0000'
-        self._jump = 0
         self._step = True
         self._state_to_function = {
-            'b': self._assign_operand,
-            'o': self._assign_operator,
-            'c': self._recognise_input,
+            'bgn': self._assign_operand,
+            'opr': self._assign_operator,
+            'cnt': self._recognise_input,
+            'prs': self._parse_tape,
+            'chk': self._check_var,
+            'rd': self._read_var,
+            'wrt': self._write_var,
             '+': self._add,
             '*': self._prod,
             '-': self._sub,
@@ -26,6 +29,8 @@ class TuringMachine:
                 self._head += 1
                 if self._head >= len(self._tape):
                     self._tape += [' ']
+            case '>>':
+                self._head = int(self._tape[0])
             case '~':
                 pass
 
@@ -33,39 +38,75 @@ class TuringMachine:
         if cell in ('*', '+', '-', '/'):
             return self._assign_operator(cell)
         elif cell == ' ':
-            self._state = 'T'
-            return self._operand, '~'
+            return 'T', self._operand, '~'
+        elif cell.isalpha():
+            return self._get_var(cell)
+        elif cell == '=':
+            ...
         else:
             return self._assign_operand(cell)
 
     def _assign_operator(self, operator):
-        self._state = operator
-        return operator, '>'
+        if operator in ('*', '+', '-', '/'):
+            return operator, operator, '>'
 
     def _assign_operand(self, operand):
-        self._state = 'o'
         self._operand = operand
-        return operand, '>'
+        return 'opr', operand, '>'
+
+
+    def _get_var(self, cell):
+        self._tape[0] = str(self._head)
+        self._tape[1] = self._state
+        self._tape[2] = self._operand
+        self._operand = cell
+        return 'prs', cell, '<'
 
     def _add(self, cell):
-        self._state = 'c'
+        if cell.isalpha():
+            return self._get_var(cell)
         self._operand = f'{int(self._operand) + int(cell)}'
-        return cell, '>'
+        return 'cnt', cell, '>'
 
     def _prod(self, cell):
-        self._state = 'c'
+        if cell.isalpha():
+            return self._get_var(cell)
         self._operand = f'{int(self._operand) * int(cell)}'
-        return cell, '>'
+        return 'cnt', cell, '>'
 
     def _div(self, cell):
-        self._state = 'c'
+        if cell.isalpha():
+            return self._get_var(cell)
         self._operand = f'{int(self._operand) // int(cell)}'
-        return cell, '>'
+        return 'cnt', cell, '>'
 
     def _sub(self, cell):
-        self._state = 'c'
+        if cell.isalpha():
+            return self._get_var(cell)
         self._operand = f'{int(self._operand) - int(cell)}'
-        return cell, '>'
+        return 'cnt', cell, '>'
+
+    def _parse_tape(self, cell):
+        if cell == self._operand:
+            return 'chk', cell, '>'
+        else:
+            return 'prs', cell, '<'
+
+    def _check_var(self, cell):
+        if cell == '=':
+            return 'rd', cell, '>'
+        else:
+            self._move_head('<')
+            return 'prs', cell, '<'
+
+    def _read_var(self, var):
+        self._operand = var
+        return 'wrt', var, '>>'
+
+    def _write_var(self, cell):
+        temp = self._operand
+        self._operand = self._tape[2]
+        return self._tape[1], temp, '~'
 
     def process(self):
         self.output_tape()
@@ -73,7 +114,7 @@ class TuringMachine:
             if self._step:
                 _ = input('')
             cell = self._tape[self._head]
-            self._tape[self._head], direction = self._state_to_function[self._state](cell)
+            self._state, self._tape[self._head], direction = self._state_to_function[self._state](cell)
             self._move_head(direction)
             self.output_tape()
 
