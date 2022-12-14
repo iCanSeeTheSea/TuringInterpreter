@@ -15,7 +15,10 @@ class TuringMachine:
             'chk': self._check_var,
             'rd': self._read_var,
             'wrt': self._write_var,
+            'tru': self._if_true,
+            'fls': self._if_false,
             '?=': self._if_equal,
+            '?!': self._if_not,
             '?>': self._if_greater,
             '?<': self._if_less,
             '+': self._add,
@@ -51,14 +54,15 @@ class TuringMachine:
             return 'T', self._operand, '~'
         elif cell.isalpha():
             return self._get_var(cell)
-        elif cell == '=':
-            ...
+        elif cell == '}':
+            return 'cnt', cell, '>'
         else:
             return self._assign_operand(cell)
 
     def _assign_operator(self, operator):
         if operator in self._operations:
             return operator, operator, '>'
+        return 'cnt', operator
 
     def _assign_operand(self, operand):
         self._operand = operand
@@ -71,35 +75,46 @@ class TuringMachine:
         self._operand = cell
         return 'gtv', cell, '<'
 
+    def _if_true(self, cell):
+        if cell == '{':
+            return 'cnt', cell, '>'
+
+    def _if_false(self, cell):
+        if cell == '}':
+            return 'cnt', cell, '>'
+        return 'fls', cell, '>'
+
     def _if_equal(self, cell):
         if cell.isalpha():
             return self._get_var(cell)
         if int(self._operand) == int(cell):
-            self._operand = 'tru'
-            return 'cnt', cell, '>'
+            return 'tru', cell, '>'
         else:
-            self._operand = 'fls'
-            return 'cnt', cell, '>'
+            return 'fls', cell, '>'
 
     def _if_greater(self, cell):
         if cell.isalpha():
             return self._get_var(cell)
         if int(self._operand) > int(cell):
-            self._operand = 'tru'
-            return 'cnt', cell, '>'
+            return 'tru', cell, '>'
         else:
-            self._operand = 'fls'
-            return 'cnt', cell, '>'
+            return 'fls', cell, '>'
 
     def _if_less(self, cell):
         if cell.isalpha():
             return self._get_var(cell)
         if int(self._operand) < int(cell):
-            self._operand = 'tru'
-            return 'cnt', cell, '>'
+            return 'tru', cell, '>'
         else:
-            self._operand = 'fls'
-            return 'cnt', cell, '>'
+            return 'fls', cell, '>'
+
+    def _if_not(self, cell):
+        if cell.isalpha():
+            return self._get_var(cell)
+        if int(self._operand) is not int(cell):
+            return 'tru', cell, '>'
+        else:
+            return 'fls', cell, '>'
 
     def _add(self, cell):
         if cell.isalpha():
