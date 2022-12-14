@@ -1,18 +1,23 @@
 class TuringMachine:
     def __init__(self):
+        self._operations = ('*', '+', '-', '/', '?=', '?<', '?>')
         self._tape = [''] * 3 + input('').split(' ')
         self._head = 3
-        self._state = 'cnt'
-        self._operand = '0000'
+        self._state = 'bgn'
+        self._operand = '000'
         self._step = True
         self._state_to_function = {
-            'bgn': self._assign_operand,
+            'bgn': self._check_start,
             'opr': self._assign_operator,
             'cnt': self._recognise_input,
+            'gtv': self._go_to_vars,
             'prs': self._parse_tape,
             'chk': self._check_var,
             'rd': self._read_var,
             'wrt': self._write_var,
+            '?=': self._if_equal,
+            '?>': self._if_greater,
+            '?<': self._if_less,
             '+': self._add,
             '*': self._prod,
             '-': self._sub,
@@ -34,8 +39,13 @@ class TuringMachine:
             case '~':
                 pass
 
+    def _check_start(self, cell):
+        if cell == ':':
+            return 'cnt', cell, '>'
+        return 'bgn', cell, '>'
+
     def _recognise_input(self, cell):
-        if cell in ('*', '+', '-', '/'):
+        if cell in self._operations:
             return self._assign_operator(cell)
         elif cell == ' ':
             return 'T', self._operand, '~'
@@ -47,20 +57,49 @@ class TuringMachine:
             return self._assign_operand(cell)
 
     def _assign_operator(self, operator):
-        if operator in ('*', '+', '-', '/'):
+        if operator in self._operations:
             return operator, operator, '>'
 
     def _assign_operand(self, operand):
         self._operand = operand
         return 'opr', operand, '>'
 
-
     def _get_var(self, cell):
         self._tape[0] = str(self._head)
         self._tape[1] = self._state
         self._tape[2] = self._operand
         self._operand = cell
-        return 'prs', cell, '<'
+        return 'gtv', cell, '<'
+
+    def _if_equal(self, cell):
+        if cell.isalpha():
+            return self._get_var(cell)
+        if int(self._operand) == int(cell):
+            self._operand = 'tru'
+            return 'cnt', cell, '>'
+        else:
+            self._operand = 'fls'
+            return 'cnt', cell, '>'
+
+    def _if_greater(self, cell):
+        if cell.isalpha():
+            return self._get_var(cell)
+        if int(self._operand) > int(cell):
+            self._operand = 'tru'
+            return 'cnt', cell, '>'
+        else:
+            self._operand = 'fls'
+            return 'cnt', cell, '>'
+
+    def _if_less(self, cell):
+        if cell.isalpha():
+            return self._get_var(cell)
+        if int(self._operand) < int(cell):
+            self._operand = 'tru'
+            return 'cnt', cell, '>'
+        else:
+            self._operand = 'fls'
+            return 'cnt', cell, '>'
 
     def _add(self, cell):
         if cell.isalpha():
@@ -85,6 +124,11 @@ class TuringMachine:
             return self._get_var(cell)
         self._operand = f'{int(self._operand) - int(cell)}'
         return 'cnt', cell, '>'
+
+    def _go_to_vars(self, cell):
+        if cell == ':':
+            return 'prs', cell, '<'
+        return 'gtv', cell, '<'
 
     def _parse_tape(self, cell):
         if cell == self._operand:
@@ -120,22 +164,15 @@ class TuringMachine:
 
     def output_tape(self):
         print(
-            f"S{self._state}X{self._operand}\n ━┳━{'━┳━'.join(['━━━━' for _ in range(len(self._tape))])}━┳━"
+            f"S{self._state}X{self._operand}\n ━┳━{'━┳━'.join(['━━━' for _ in range(len(self._tape))])}━┳━"
         )
-        print(f"{' ┃ '.join([' '] + [c + ' '*(4-len(c)) for c in self._tape])} ┃  ")
+        print(f"{' ┃ '.join([' '] + [(lambda c: c if len(c) == 3 else f'{c} ' if len(c) == 2 else f' {c} ' if len(c) == 1 else '   ')(c) for c in self._tape])} ┃  ")
         print(
-            f" ━┻━{'━┻━'.join(['━━━━' for _ in range(len(self._tape))])}━┻━"
+            f" ━┻━{'━┻━'.join(['━━━' for _ in range(len(self._tape))])}━┻━"
         )
         print(
-            f"    {''.join(['       ' for _ in range(self._head)])}↑"
+            f"     {''.join(['      ' for _ in range(self._head)])}↑"
         )
-
-    def output_head(self):
-        print(f"S{self._state}\n {'━┳━━'.join(['' for _ in range(10)])}━┳━")
-        print(
-            f"  ┃ {' ┃ '.join(self._tape[self._head - 4: self._head + 5] + [' ' for _ in range(5 - (len(self._tape) - self._head)) if len(self._tape) - self._head < 5])} ┃  ")
-        print(f" {'━┻━━'.join(['' for _ in range(10)])}━┻━")
-        print("                    ↑")
 
 
 machine = TuringMachine()
