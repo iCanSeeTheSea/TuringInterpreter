@@ -1,22 +1,28 @@
 class TuringMachine:
     def __init__(self):
-        self._operations = ('*', '+', '-', '/', '?=', '?<', '?>')
+        self._operations = ('*', '+', '-', '/', '?=', '?<', '?>', '=', '=+', '=-', '=*', '=/', '@=', '@>', '@<', '@!')
         self._tape = [''] * 3 + input('').split(' ')
         self._head = 3
         self._state = 'bgn'
         self._operand = '000'
         self._step = True
         self._state_to_function = {
-            'bgn': self._check_start,
-            'opr': self._assign_operator,
-            'cnt': self._recognise_input,
-            'gtv': self._go_to_vars,
-            'prs': self._parse_tape,
-            'chk': self._check_var,
-            'rd': self._read_var,
-            'wrt': self._write_var,
-            'tru': self._if_true,
-            'fls': self._if_false,
+            'bgn': self._check_start,  # begin
+            'opr': self._assign_operator,  # operate
+            'cnt': self._recognise_input,  # continue
+            'skp': self._skip,  # skip
+            'gtv': self._go_to_vars,  # go to variables
+            'prs': self._parse_tape,  # parse
+            'chk': self._check_var,  # check
+            'rd': self._read_var,  # read
+            'wrt': self._write_var,  # write
+            'tru': self._if_true,  # true
+            'fls': self._if_false,   # false
+            'eqv': self._equate_var,  # set var
+            'adv': self._add_var,  # add to var
+            'sbv': self._sub_var,  # subtract from var
+            'pdv': self._prod_var,  # multiply var
+            'dvv': self._div_var,  # divide var
             '?=': self._if_equal,
             '?!': self._if_not,
             '?>': self._if_greater,
@@ -25,6 +31,15 @@ class TuringMachine:
             '*': self._prod,
             '-': self._sub,
             '/': self._div,
+            '=': self._get_var,
+            '=+': self._get_var,
+            '=-': self._get_var,
+            '=*': self._get_var,
+            '=/': self._get_var,
+            '@=': self._while_equal,
+            '@>': self._while_greater,
+            '@<': self._while_less,
+            '@!': self._while_not,
         }
 
     def _move_head(self, direction):
@@ -42,6 +57,9 @@ class TuringMachine:
             case '~':
                 pass
 
+    def _skip(self, cell):
+        return 'cnt', cell, '>'
+
     def _check_start(self, cell):
         if cell == ':':
             return 'cnt', cell, '>'
@@ -51,7 +69,7 @@ class TuringMachine:
         if cell in self._operations:
             return self._assign_operator(cell)
         elif cell == ' ':
-            return 'T', self._operand, '~'
+            return 'hlt', self._operand, '~'
         elif cell.isalpha():
             return self._get_var(cell)
         elif cell == '}':
@@ -74,6 +92,18 @@ class TuringMachine:
         self._tape[2] = self._operand
         self._operand = cell
         return 'gtv', cell, '<'
+
+    def _while_equal(self, cell):
+        ...
+
+    def _while_greater(self, cell):
+        ...
+
+    def _while_less(self, cell):
+        ...
+
+    def _while_not(self, cell):
+        ...
 
     def _if_true(self, cell):
         if cell == '{':
@@ -116,6 +146,25 @@ class TuringMachine:
         else:
             return 'fls', cell, '>'
 
+    def _equate_var(self, cell):
+        return 'skp', self._operand, '>>'
+
+    def _add_var(self, cell):
+        self._operand = f'{int(self._operand) + int(cell)}'
+        return 'skp', self._operand, '>>'
+
+    def _sub_var(self, cell):
+        self._operand = f'{int(self._operand) - int(cell)}'
+        return 'skp', self._operand, '>>'
+
+    def _prod_var(self, cell):
+        self._operand = f'{int(self._operand) * int(cell)}'
+        return 'skp', self._operand, '>>'
+
+    def _div_var(self, cell):
+        self._operand = f'{int(self._operand) / int(cell)}'
+        return 'skp', self._operand, '>>'
+
     def _add(self, cell):
         if cell.isalpha():
             return self._get_var(cell)
@@ -153,6 +202,22 @@ class TuringMachine:
 
     def _check_var(self, cell):
         if cell == '=':
+            match self._tape[1]:
+                case '=':
+                    self._operand = self._tape[2]
+                    return 'eqv', cell, '>'
+                case '=+':
+                    self._operand = self._tape[2]
+                    return 'adv', cell, '>'
+                case '=-':
+                    self._operand = self._tape[2]
+                    return 'sbv', cell, '>'
+                case '=*':
+                    self._operand = self._tape[2]
+                    return 'pdv', cell, '>'
+                case '=/':
+                    self._operand = self._tape[2]
+                    return 'dvv', cell, '>'
             return 'rd', cell, '>'
         else:
             self._move_head('<')
@@ -169,7 +234,7 @@ class TuringMachine:
 
     def process(self):
         self.output_tape()
-        while self._state != 'T':
+        while self._state != 'hlt':
             if self._step:
                 _ = input('')
             cell = self._tape[self._head]
