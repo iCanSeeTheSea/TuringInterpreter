@@ -10,6 +10,7 @@ class TuringMachine:
             'bgn': self._check_start,  # begin
             'opr': self._assign_operator,  # operate
             'cnt': self._recognise_input,  # continue
+            'whl': self._start_loop, # while loop
             'skp': self._skip,  # skip
             'gtv': self._go_to_vars,  # go to variables
             'prs': self._parse_tape,  # parse
@@ -72,7 +73,7 @@ class TuringMachine:
             return 'hlt', self._operand, '~'
         elif cell.isalpha():
             return self._get_var(cell)
-        elif cell == '}':
+        elif cell == '}' or cell == '[' or cell == ']':
             return 'cnt', cell, '>'
         else:
             return self._assign_operand(cell)
@@ -94,16 +95,29 @@ class TuringMachine:
         return 'gtv', cell, '<'
 
     def _while_equal(self, cell):
-        ...
+        if self._operand == cell:
+            return 'whl', cell, '<'
+        return 'cnt', cell, '>'
 
     def _while_greater(self, cell):
-        ...
+        if self._operand > cell:
+            return 'whl', cell, '<'
+        return 'cnt', cell, '>'
 
     def _while_less(self, cell):
-        ...
+        if self._operand < cell:
+            return 'whl', cell, '<'
+        return 'cnt', cell, '>'
 
     def _while_not(self, cell):
-        ...
+        if self._operand is not cell:
+            return 'whl', cell, '<'
+        return 'cnt', cell, '>'
+
+    def _start_loop(self, cell):
+        if cell == '[':
+            return 'cnt', cell, '>'
+        return 'whl', cell, '<'
 
     def _if_true(self, cell):
         if cell == '{':
@@ -228,9 +242,9 @@ class TuringMachine:
         return 'wrt', var, '>>'
 
     def _write_var(self, cell):
-        temp = self._operand
-        self._operand = self._tape[2]
-        return self._tape[1], temp, '~'
+        # temp = self._operand
+        # self._operand = self._tape[2]
+        return self._tape[1], cell, '>'
 
     def process(self):
         self.output_tape()
