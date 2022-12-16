@@ -100,12 +100,12 @@ class TuringMachine:
         return 'cnt', cell, '>'
 
     def _while_greater(self, cell):
-        if self._operand > cell:
+        if int(self._operand) > int(cell):
             return 'whl', cell, '<'
         return 'cnt', cell, '>'
 
     def _while_less(self, cell):
-        if self._operand < cell:
+        if int(self._operand) < int(cell):
             return 'whl', cell, '<'
         return 'cnt', cell, '>'
 
@@ -257,6 +257,7 @@ class TuringMachine:
             self.output_tape()
 
     def output_tape(self):
+        print('\033[6A')
         print(
             f"S{self._state}X{self._operand}\n ━┳━{'━┳━'.join(['━━━' for _ in range(len(self._tape))])}━┳━"
         )
@@ -271,3 +272,16 @@ class TuringMachine:
 
 machine = TuringMachine()
 machine.process()
+
+
+
+y = 1
+x = 0
+while True:
+    x += 1
+    y *= x
+    if x < 6:
+        continue
+    else:
+        break
+print(y)
